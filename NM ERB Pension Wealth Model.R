@@ -123,36 +123,60 @@ AgeRow <- (120 - 25 + 1)
 SurvivalMaleMatrix <- matrix(0, nrow = AgeRow, ncol = YearCol)
 SurvivalFemaleMatrix <- matrix(0, nrow = AgeRow, ncol = YearCol)
 
-for(i in 25:125){
-  RowCount <- i - 25 + 1
-  
-  if(i <= 80){
-    SurvivalMaleMatrix[RowCount,2] <- as.double(Pub2010MaleTeacher[which(SurvivalRates[,1] == i),1])
-    SurvivalFemaleMatrix[RowCount,2] <- as.double(Pub2010FemaleTeacher[which(SurvivalRates[,1] == i),1])
-  } else {
-    SurvivalMaleMatrix[RowCount,2] <- as.double(RP2014HealthyMale[which(SurvivalRates[,1] == i),1])
-    SurvivalFemaleMatrix[RowCount,2] <- as.double(RP2014HealthyFemale[which(SurvivalRates[,1] == i),1])
-  }
-  
-  for(j in 2011:2129){
-    ColCount <- j - 2009 + 1
-    if(j <= 2033){
-      YearRef <- j
-    } else {
-      YearRef <- 2033
+for(i in 1:96){
+  SurvivalAge <- i + 24
+  for(j in 2:121){
+    SurvivalYear <- j + 2008
+    ColumnCheck <- 0
+    
+    if((SurvivalAge <= 75) && (SurvivalYear == 2010)){
+      SurvivalMaleMatrix[i,j] <- as.double(Pub2010MaleTeacher[which(SurvivalRates[,1] == SurvivalAge),1])
+      SurvivalFemaleMatrix[i,j] <- as.double(Pub2010FemaleTeacher[which(SurvivalRates[,1] == SurvivalAge),1])
+      ColumnCheck <- 1
+    } else if ((SurvivalAge > 80) && (SurvivalYear == 2010)){
+      SurvivalMaleMatrix[i,j] <- as.double(RP2014HealthyMale[which(SurvivalRates[,1] == SurvivalAge),1])
+      SurvivalFemaleMatrix[i,j] <- as.double(RP2014HealthyFemale[which(SurvivalRates[,1] == SurvivalAge),1])
+      ColumnCheck <- 1
+    } else if (SurvivalYear == 2014){
+      if(SurvivalAge < 50){
+        SurvivalMaleMatrix[i,j] <- as.double(RP2014Male[which(SurvivalRates[,1] == SurvivalAge),1])
+        SurvivalFemaleMatrix[i,j] <- as.double(RP2014Female[which(SurvivalRates[,1] == SurvivalAge),1])
+      } else {
+        SurvivalMaleMatrix[i,j] <- as.double(RP2014HealthyMale[which(SurvivalRates[,1] == SurvivalAge),1])
+        SurvivalFemaleMatrix[i,j] <- as.double(RP2014HealthyFemale[which(SurvivalRates[,1] == SurvivalAge),1])
+      }
+    } else if((SurvivalAge > 75) && (SurvivalYear == 2010)){
+      Value1 <- as.double(Pub2010MaleTeacher[which(SurvivalRates[,1] == 75),1])
+      Value2 <- as.double(RP2014HealthyMale[which(SurvivalRates[,1] == 81),1])
+      Slope <- (Value2 - Value1) / (81 - 75)
+      SurvivalMaleMatrix[i,j] <- (Slope*(SurvivalAge - 75)) + Value1
+      
+      Value1 <- as.double(Pub2010FemaleTeacher[which(SurvivalRates[,1] == 75),1])
+      Value2 <- as.double(RP2014HealthyFemale[which(SurvivalRates[,1] == 81),1])
+      Slope <- (Value2 - Value1) / (81 - 75)
+      SurvivalFemaleMatrix[i,j] <- (Slope*(SurvivalAge - 75)) + Value1
+      ColumnCheck <- 1
     }
     
-    RowIndex <- which(MaleMortality[,1] == i)
-    ColIndex <- which(colnames(MaleMortality) == YearRef)
-    SurvivalMaleMatrix[RowCount,ColCount] <- SurvivalMaleMatrix[RowCount,ColCount-1]*(1 - as.double(MaleMortality[RowIndex,ColIndex]))
+    if(ColumnCheck == 0){
+      if(SurvivalYear <= 2033){
+        YearRef <- SurvivalYear
+      } else {
+        YearRef <- 2033
+      }
+      
+      RowIndex <- which(MaleMortality[,1] == SurvivalAge)
+      ColIndex <- which(colnames(MaleMortality) == YearRef)
+      SurvivalMaleMatrix[i,j] <- SurvivalMaleMatrix[i,j-1]*(1 - as.double(MaleMortality[RowIndex,ColIndex]))
+      
+      RowIndex <- which(FemaleMortality[,1] == SurvivalAge)
+      ColIndex <- which(colnames(FemaleMortality) == YearRef)
+      SurvivalFemaleMatrix[i,j] <- SurvivalFemaleMatrix[i,j-1]*(1 - as.double(FemaleMortality[RowIndex,ColIndex]))
+    }
     
-    RowIndex <- which(FemaleMortality[,1] == i)
-    ColIndex <- which(colnames(FemaleMortality) == YearRef)
-    SurvivalFemaleMatrix[RowCount,ColCount] <- SurvivalFemaleMatrix[RowCount,ColCount-1]*(1 - as.double(FemaleMortality[RowIndex,ColIndex]))
-    
-    if(j == 2020){
-      SurvivalMaleMatrix[RowCount,1] <- SurvivalMaleMatrix[RowCount,12]
-      SurvivalFemaleMatrix[RowCount,1] <- SurvivalFemaleMatrix[RowCount,12]
+    if(SurvivalYear == 2020){
+      SurvivalMaleMatrix[i,1] <- SurvivalMaleMatrix[i,12]
+      SurvivalFemaleMatrix[i,1] <- SurvivalFemaleMatrix[i,12]
     }
   }
 }
@@ -220,30 +244,27 @@ for(i in 1:nrow(ProbNextYear)){
   LifeExpectancy[i,1] <- sum(ProbNextYear[i:nrow(ProbNextYear),]) / ProbNextYear[i,1]
 }
 
-AnnuityFactor <- ProbNextYear
+AnnuityFactor <- DiscProbNextYear
 colnames(AnnuityFactor) <- 'Annuity Factor'
 AnnuityFactor[1:20,1] <- 1
 
-for(j in 45:115){
+for(j in 45:114){
   sum <- 0
   RowIndex <- j - 25 + 1
-  for(i in RowIndex:nrow(ProbNextYear)-5){
-    if(as.double(Age[i,1]) == j){
-      sum <- sum + ProbNextYear[i,1]
-      TempValue <- as.double(ProbNextYear[(RowIndex + 5),1])
+  for(i in RowIndex:nrow(DiscProbNextYear)-5){
+    if((as.double(Age[i,1]) >= j) && (COLACompound == 1)){
+      TempValue <- as.double(DiscProbNextYear[i,1])*((1+COLA)^(as.double(Age[i,1]) - j))
+      sum <- sum + TempValue
     } else {
-      if(COLACompound == 1){
-        sum <- sum + as.double(ProbNextYear[i,1])*((1+COLA)^(as.double(Age[i,1]) - j))
-        TempValue <- as.double(ProbNextYear[(RowIndex + 5),1])*((1+COLA)^(as.double(Age[(RowIndex + 5),1]) - j))
-      } else {
-        sum <- sum + as.double(ProbNextYear[i,1])*(1 +(COLA)*(as.double(Age[i,1]) - j))
-        TempValue <- as.double(ProbNextYear[(RowIndex + 5),1])*(1 +(COLA)*(as.double(Age[(RowIndex + 5),1]) - j))
-      }
+      TempValue <- as.double(DiscProbNextYear[i,1])*(1 +(COLA)*(as.double(Age[i,1]) - j))
+      sum <- sum + TempValue
     }
     
-    if(i == (RowIndex + 5)){
+    
+    if(as.double(Age[i,1]) == j){
       FactorDiv <- TempValue
     }
   }
+
   AnnuityFactor[RowIndex,1] <- sum / FactorDiv
 }
