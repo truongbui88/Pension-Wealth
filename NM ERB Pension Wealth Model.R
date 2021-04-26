@@ -1,3 +1,4 @@
+rm(list = ls())
 library("readxl")
 library(tidyverse)
 setwd(getwd())
@@ -7,10 +8,13 @@ FileName <- 'Model Inputs.xlsx'
 model_inputs <- read_excel(FileName, sheet = 'Main')
 MeritIncreases <- model_inputs[,5]
 payroll_growth <- as.double(model_inputs[which(model_inputs[,1] == 'Payroll Growth Rate (Basic)'),2])
+salary_growth <- as.double(model_inputs[which(model_inputs[,1] == 'Salary Increase (Wage Inflation)'),2])
 StartingSalary <- as.double(model_inputs[which(model_inputs[,1] == 'Starting Salary'),2])
 Vesting <- as.double(model_inputs[which(model_inputs[,1] == 'Vesting (years)'),2])
 HiringAge <- as.double(model_inputs[which(model_inputs[,1] == 'Hiring Age'),2])
 YOS <- model_inputs[,4]
+
+IRSCompLimit <- as.double(model_inputs[which(model_inputs[,1] == 'IRS Compensation Limit'),2])
 ER_Contrib <- as.double(model_inputs[which(model_inputs[,1] == 'ER Contribution Rate'),2])
 EE_Contrib <- as.double(model_inputs[which(model_inputs[,1] == 'EE Contribution Rate'),2])
 ARR <- as.double(model_inputs[which(model_inputs[,1] == 'ARR/DR'),2])
@@ -58,14 +62,20 @@ InitializeDataFieldName <- function (Data, ColumnName) {
 #Salary increases and other
 #MeritIncreases <- LinearInterpolation(MeritIncreases)
 Salary <- InitializeDataFieldName(MeritIncreases, 'Salary Growth')
-Salary[1,1] <- StartingSalary
 FinalAvgSalary <- InitializeDataFieldName(MeritIncreases,'Final Average Salary Growth')
+IRSSalaryCap <- InitializeDataFieldName(MeritIncreases,'Salary Growth Subject to IRS Cap')
+CumulativeWage <- InitializeDataFieldName(MeritIncreases,'Cumulative Current Wage (CCW)')
+
+Salary[1,1] <- StartingSalary
+CumulativeWage[1,1] <- 0
 
 for(i in 1:nrow(MeritIncreases)){
   if(i > 1){
-    Salary[i,1] <- Salary[i-1,1]*(1 + (MeritIncreases[i-1,1] + payroll_growth)) 
+    Salary[i,1] <- Salary[i-1,1]*(1 + (MeritIncreases[i-1,1] + salary_growth)) 
+    CumulativeWage[i,1] <- CumulativeWage[i-1,1]*(1 + ARR) + Salary[i-1,1]
   }
-  
+  IRSSalaryCap[i,1] <- min(Salary[i,1],IRSCompLimit)
+    
   FinalAvgSalary[i,1] <- 0
   if(YOS[i,1] >= Vesting){
     FinalAvgSalary[i,1] <- sum(Salary[(i-Vesting):(i-1),1])/Vesting
