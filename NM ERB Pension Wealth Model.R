@@ -121,12 +121,12 @@ RP2014Female <- SurvivalRates[,11]
 RP2014HealthyFemale <- SurvivalRates[,12]
 RP2014DisFemale <- SurvivalRates[,13]
 
-Pub2010NonDisMaleTeacher <- LinearInterpolation(Pub2010NonDisMaleTeacher)
-Pub2010DisMaleTeacher <- LinearInterpolation(Pub2010DisMaleTeacher)
-#Pub2010MaleTeacher <- LinearInterpolation(Pub2010MaleTeacher)
-Pub2010NonDisFemaleTeacher <- LinearInterpolation(Pub2010NonDisFemaleTeacher)
-Pub2010DisFemaleTeacher <- LinearInterpolation(Pub2010DisFemaleTeacher)
-#Pub2010FemaleTeacher <- LinearInterpolation(Pub2010FemaleTeacher)
+# Pub2010NonDisMaleTeacher <- LinearInterpolation(Pub2010NonDisMaleTeacher)
+# Pub2010DisMaleTeacher <- LinearInterpolation(Pub2010DisMaleTeacher)
+# #Pub2010MaleTeacher <- LinearInterpolation(Pub2010MaleTeacher)
+# Pub2010NonDisFemaleTeacher <- LinearInterpolation(Pub2010NonDisFemaleTeacher)
+# Pub2010DisFemaleTeacher <- LinearInterpolation(Pub2010DisFemaleTeacher)
+# #Pub2010FemaleTeacher <- LinearInterpolation(Pub2010FemaleTeacher)
 
 YearCol <- (2129 - 2009 + 1)
 AgeRow <- (120 - 25 + 1)
@@ -140,13 +140,17 @@ for(i in 1:96){
     #Column Check is for all of the special cases such as RP 2014 and Pub 2010
     ColumnCheck <- 0
     
-    if((SurvivalAge <= 75) && (SurvivalYear == 2010)){
+    if((SurvivalAge == 120)){
+      SurvivalMaleMatrix[i,j] <- 1
+      SurvivalFemaleMatrix[i,j] <- 1
+      ColumnCheck <- 1
+    } else if((SurvivalAge <= 57) && (SurvivalYear == 2010)){
       SurvivalMaleMatrix[i,j] <- as.double(Pub2010MaleTeacher[which(SurvivalRates[,1] == SurvivalAge),1])
       SurvivalFemaleMatrix[i,j] <- as.double(Pub2010FemaleTeacher[which(SurvivalRates[,1] == SurvivalAge),1])
       ColumnCheck <- 1
-    } else if ((SurvivalAge > 75) && ((SurvivalYear >= 2010) && (SurvivalYear <= 2014))){
-      SurvivalMaleMatrix[i,j] <- as.double(RP2014HealthyMale[which(SurvivalRates[,1] == SurvivalAge),1])*ScaleMultiple
-      SurvivalFemaleMatrix[i,j] <- as.double(RP2014HealthyFemale[which(SurvivalRates[,1] == SurvivalAge),1])*ScaleMultiple
+    } else if((SurvivalAge > 57) && (SurvivalYear == 2010)){
+      SurvivalMaleMatrix[i,j] <- as.double(Pub2010NonDisMaleTeacher[which(SurvivalRates[,1] == SurvivalAge),1])*ScaleMultiple
+      SurvivalFemaleMatrix[i,j] <- as.double(Pub2010NonDisFemaleTeacher[which(SurvivalRates[,1] == SurvivalAge),1])
       ColumnCheck <- 1
     }
     
@@ -159,11 +163,11 @@ for(i in 1:96){
       }
       
       RowIndex <- which(MaleMortality[,1] == SurvivalAge)
-      ColIndex <- which(colnames(MaleMortality) == YearRef)
+      ColIndex <- which(colnames(MaleMortality) == 2033)
       SurvivalMaleMatrix[i,j] <- SurvivalMaleMatrix[i,j-1]*(1 - as.double(MaleMortality[RowIndex,ColIndex]))
       
       RowIndex <- which(FemaleMortality[,1] == SurvivalAge)
-      ColIndex <- which(colnames(FemaleMortality) == YearRef)
+      ColIndex <- which(colnames(FemaleMortality) == 2033)
       SurvivalFemaleMatrix[i,j] <- SurvivalFemaleMatrix[i,j-1]*(1 - as.double(FemaleMortality[RowIndex,ColIndex]))
     }
     
