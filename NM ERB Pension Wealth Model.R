@@ -5,7 +5,10 @@ setwd(getwd())
 FileName <- 'Model Inputs.xlsx'
 #
 #
-model_inputs <- read_excel(FileName, sheet = 'Main')
+
+a <- 5 + 8
+
+model_inputs_Truong <- read_excel(FileName, sheet = 'Main')
 MeritIncreases <- model_inputs[,5]
 payroll_growth <- as.double(model_inputs[which(model_inputs[,1] == 'Payroll Growth Rate (Basic)'),2])
 salary_growth <- as.double(model_inputs[which(model_inputs[,1] == 'Salary Increase (Wage Inflation)'),2])
